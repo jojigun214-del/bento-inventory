@@ -22,7 +22,24 @@
         .item-info { display: flex; justify-content: space-between; align-items: center; }
         .item-name { font-weight: bold; font-size: 15px; }
         .item-price { color: #d93025; font-weight: bold; }
-        .stock-input { width: 55px; text-align: center; padding: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; font-weight: bold; }
+        
+        /* 庫存輸入框樣式 (隱藏預設上下按鈕) */
+        .stock-input { 
+            width: 55px; 
+            text-align: center; 
+            padding: 4px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            -moz-appearance: textfield; /* Firefox 隱藏微調按鈕 */
+        }
+        /* Chrome, Safari, Edge, Opera 隱藏微調按鈕 */
+        .stock-input::-webkit-outer-spin-button,
+        .stock-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
         
         /* 操作按鈕群 */
         .btn-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -52,23 +69,25 @@
     <div class="header-box">
         <div style="grid-column: span 2;">
             <label>日期</label>
-            <input type="date" id="dateInput">
+            <input type="date" id="dateInput" onchange="saveToStorage()">
         </div>
         <div>
             <label>地點</label>
-            <select id="locationSelect">
+            <select id="locationSelect" onchange="saveToStorage()">
+                <option value="農安">農安</option>
+                <option value="馬偕">馬偕</option>
+                <option value="中山">中山</option>
+                <option value="吉林">吉林</option>
                 <option value="松江">松江</option>
-                <option value="南京">南京</option>
-                <option value="內湖">內湖</option>
+                <option value="晴光">晴光</option>
+                <option value="復北">復北</option>
+                <option value="建國">建國</option>
+                <option value="民生">民生</option>
             </select>
         </div>
         <div>
             <label>販售人員</label>
-            <select id="staffSelect">
-                <option value="小宇">小宇</option>
-                <option value="哲宇">哲宇</option>
-                <option value="小明">小明</option>
-            </select>
+            <input type="text" id="staffInput" placeholder="請輸入姓名" oninput="saveToStorage()">
         </div>
     </div>
 
@@ -95,31 +114,81 @@
 <script>
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyHyH8B1-YZB2-oJPAe1vXzdjHRlcqeHqFOArAWIkao7gUHv7mUkhYeSpGvzm6AKhldLA/exec";
 
-    // 自動預設今日日期
-    document.getElementById('dateInput').valueAsDate = new Date();
+    function getTodayString() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
 
-    const menuData = [
+    const todayStr = getTodayString();
+    document.getElementById('dateInput').value = todayStr;
+
+    let menuData = [
         {
             category: "澎派餐盒",
             items: [
-                { id: 1, name: "三杯雞", price: 150, stock: 8, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 2, name: "檸檬鱸魚", price: 160, stock: 3, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 3, name: "壽喜燒豬", price: 150, stock: 6, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 4, name: "蔥油雞", price: 150, stock: 5, sold: 0, transferredOut: 0, transferredIn: 0 }
+                { id: 1, name: "雙拼", price: 200, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 2, name: "鱸魚", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 3, name: "滷肉", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 4, name: "滷雞腿", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 5, name: "瓜仔肉", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 6, name: "鯖魚", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 7, name: "蔥雞", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 8, name: "壽喜燒豬", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 9, name: "三杯雞", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 10, name: "虱目魚柳", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 11, name: "素菇菇", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 12, name: "豆皮捲", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 }
             ]
         },
         {
             category: "家常便當",
             items: [
-                { id: 5, name: "三杯雞", price: 120, stock: 8, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 6, name: "蔥油雞", price: 120, stock: 8, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 7, name: "壽喜燒豬", price: 120, stock: 8, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 8, name: "台式滷肉", price: 130, stock: 8, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 9, name: "鹽烤鯖魚", price: 120, stock: 8, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 10, name: "虱目魚柳", price: 120, stock: 8, sold: 0, transferredOut: 0, transferredIn: 0 }
+                { id: 13, name: "滷肉", price: 130, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 14, name: "滷雞腿", price: 130, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 15, name: "瓜仔肉", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 16, name: "鯖魚", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 17, name: "蔥雞", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 18, name: "壽喜燒豬", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 19, name: "三杯雞", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 20, name: "虱目魚柳", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 21, name: "素菇菇", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+                { id: 22, name: "豆皮捲", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 }
             ]
         }
     ];
+
+    function saveToStorage() {
+        const stateData = {
+            savedDate: document.getElementById('dateInput').value,
+            location: document.getElementById('locationSelect').value,
+            staff: document.getElementById('staffInput').value,
+            menuData: menuData
+        };
+        localStorage.setItem('bento_app_backup', JSON.stringify(stateData));
+    }
+
+    function loadFromStorage() {
+        const savedData = localStorage.getItem('bento_app_backup');
+        if (savedData) {
+            try {
+                const parsed = JSON.parse(savedData);
+                const currentInputDate = document.getElementById('dateInput').value;
+
+                if (parsed.savedDate === currentInputDate) {
+                    if (parsed.location) document.getElementById('locationSelect').value = parsed.location;
+                    if (parsed.staff) document.getElementById('staffInput').value = parsed.staff;
+                    if (parsed.menuData) menuData = parsed.menuData;
+                } else {
+                    localStorage.removeItem('bento_app_backup');
+                }
+            } catch (e) {
+                console.error("還原資料失敗", e);
+            }
+        }
+    }
 
     function renderApp() {
         const appContainer = document.getElementById('bentoApp');
@@ -140,7 +209,7 @@
                         <div>
                             <span class="item-price">$${item.price}</span>
                             &nbsp; 庫存: 
-                            <input type="number" id="input-${item.id}" class="stock-input" value="${item.stock}" onchange="updateManualStock(${item.id}, this.value)">
+                            <input type="number" id="input-${item.id}" class="stock-input" min="0" value="${item.stock}" onchange="updateManualStock(${item.id}, this.value)">
                         </div>
                     </div>
                     <div class="btn-group">
@@ -157,12 +226,24 @@
         calculateTotals();
     }
 
+    // 手動修改庫存時的驗證邏輯
     function updateManualStock(itemId, val) {
         const item = findItem(itemId);
-        if (item) {
-            item.stock = parseInt(val) || 0;
-            calculateTotals();
+        if (!item) return;
+
+        let numVal = parseInt(val, 10);
+
+        // 如果輸入非數字或小於 0，強制修正為 0 並跳出提示
+        if (isNaN(numVal) || numVal < 0) {
+            alert('⚠️ 庫存數量不能為負數！已自動調整為 0。');
+            numVal = 0;
+            const inputEl = document.getElementById(`input-${itemId}`);
+            if (inputEl) inputEl.value = 0;
         }
+
+        item.stock = numVal;
+        calculateTotals();
+        saveToStorage();
     }
 
     function findItem(itemId) {
@@ -196,6 +277,7 @@
         if (inputEl) inputEl.value = item.stock;
 
         calculateTotals();
+        saveToStorage();
     }
 
     function calculateTotals() {
@@ -222,6 +304,15 @@
     }
 
     function submitData() {
+        const staffInput = document.getElementById('staffInput');
+        const staffValue = staffInput.value.trim();
+
+        if (!staffValue) {
+            alert("請先輸入【販售人員】姓名再送出資料！");
+            staffInput.focus();
+            return;
+        }
+
         if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.trim() === "") {
             alert("請先在代碼中設定正確的 GAS_WEB_APP_URL！");
             return;
@@ -234,7 +325,7 @@
         const payload = {
             date: document.getElementById('dateInput').value,
             location: document.getElementById('locationSelect').value,
-            staff: document.getElementById('staffSelect').value,
+            staff: staffValue,
             items: []
         };
 
@@ -264,6 +355,7 @@
             alert('✅ 成功上傳資料至中央廚房 Google Sheet！');
             submitBtn.disabled = false;
             submitBtn.innerText = "送出清點資料 (同步至中央廚房)";
+            saveToStorage();
         })
         .catch(err => {
             alert('❌ 上傳失敗，請檢查網路連線或 Apps Script 網址設定。');
@@ -273,6 +365,7 @@
         });
     }
 
+    loadFromStorage();
     renderApp();
 </script>
 </body>
