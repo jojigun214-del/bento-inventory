@@ -1,114 +1,191 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>便當販售現場清點與庫存系統 (修正版)</title>
-    <style>
-        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        body { background-color: #f4f6f8; margin: 0; padding: 12px; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        h2 { text-align: center; margin-top: 0; color: #1a73e8; }
-        
-        /* 標頭資訊區 */
-        .header-box { background: #e8f0fe; padding: 12px; border-radius: 8px; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .header-box div { display: flex; flex-direction: column; }
-        .header-box label { font-size: 12px; color: #5f6368; font-weight: bold; margin-bottom: 4px; }
-        .header-box input, .header-box select { padding: 8px; border: 1px solid #dadce0; border-radius: 6px; font-size: 14px; background: white; }
-        
-        /* 便當類別與列表 */
-        .category-title { font-size: 16px; font-weight: bold; background: #34a853; color: white; padding: 6px 12px; border-radius: 6px; margin-top: 16px; margin-bottom: 8px; display: flex; justify-content: space-between; }
-        .item-card { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; flex-direction: column; gap: 8px; }
-        .item-info { display: flex; justify-content: space-between; align-items: center; }
-        .item-name { font-weight: bold; font-size: 15px; }
-        .item-price { color: #d93025; font-weight: bold; }
-        
-        /* 庫存輸入框樣式 (隱藏預設上下按鈕) */
-        .stock-input { 
-            width: 55px; 
-            text-align: center; 
-            padding: 4px; 
-            border: 1px solid #ccc; 
-            border-radius: 4px; 
-            font-size: 16px; 
-            font-weight: bold; 
-            -moz-appearance: textfield; /* Firefox 隱藏微調按鈕 */
-        }
-        /* Chrome, Safari, Edge, Opera 隱藏微調按鈕 */
-        .stock-input::-webkit-outer-spin-button,
-        .stock-input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        
-        /* 操作按鈕群 */
-        .btn-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-        .btn { padding: 8px 0; border: none; border-radius: 6px; font-weight: bold; font-size: 13px; cursor: pointer; color: white; text-align: center; }
-        .btn-sell { background-color: #d93025; } /* 賣出 - 紅色 */
-        .btn-buy { background-color: #1a73e8; }  /* 買入/銷帳 - 藍色 */
-        .btn-out { background-color: #f2994a; }  /* 調出 - 橘色 */
-        .btn-in { background-color: #27ae60; }   /* 補入 - 綠色 */
-        .btn:active { opacity: 0.8; transform: scale(0.98); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>便當販售現場清點與庫存系統 (測試版)</title>
+<style>
+    :root {
+        --bg: #f5f5f3;
+        --surface: #ffffff;
+        --text: #23241f;
+        --text-secondary: #6b6a63;
+        --text-muted: #9c9b93;
+        --border: #e6e5e0;
 
-        /* 統計與結算區 */
-        .summary-box { background: #f1f3f4; padding: 12px; border-radius: 8px; margin-top: 20px; border: 2px dashed #1a73e8; }
-        .summary-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; }
-        .summary-total { font-size: 16px; font-weight: bold; color: #1a73e8; border-top: 1px solid #ccc; padding-top: 6px; margin-top: 6px; display: flex; justify-content: space-between;}
-        
-        .submit-btn { width: 100%; padding: 14px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; margin-top: 16px; cursor: pointer; }
-        .submit-btn:hover { background: #1557b0; }
-        .submit-btn:disabled { background: #a0c3ff; cursor: not-allowed; }
-    </style>
+        --c-pengpai: #b5650a;
+        --c-pengpai-bg: #fdf1e2;
+        --c-home: #0f6e5c;
+        --c-home-bg: #e6f4f0;
+        --c-custom: #6d3fa8;
+        --c-custom-bg: #f3edfa;
+
+        --sell: #c0362c;
+        --buy: #2563eb;
+        --out: #d9720f;
+        --in: #1a8a4a;
+
+        --danger: #c0362c;
+        --danger-bg: #fbe9e7;
+    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; touch-action: manipulation; }
+    body { background: var(--bg); margin: 0; padding: 12px; padding-bottom: 112px; color: var(--text); }
+    .container { max-width: 600px; margin: 0 auto; }
+
+    .top-title { text-align: center; margin: 4px 0 14px; }
+    .top-title h1 { font-size: 18px; font-weight: 700; margin: 0; color: var(--text); }
+    .top-title p { font-size: 12px; color: var(--text-muted); margin: 2px 0 0; }
+
+    .toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .toolbar-btn { display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--border); background: var(--surface); border-radius: 10px; padding: 9px 4px; font-size: 13px; font-weight: 700; color: var(--text-secondary); cursor: pointer; }
+    .toolbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .toolbar-btn .badge { background: var(--sell); color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; }
+
+    .log-panel { display: none; margin-bottom: 12px; }
+    .log-panel.show { display: block; }
+    .log-empty { text-align: center; color: var(--text-muted); font-size: 13px; padding: 16px 0; }
+    .log-entry { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .log-entry:last-child { border-bottom: none; }
+    .log-time { color: var(--text-muted); font-size: 11px; white-space: nowrap; }
+    .log-desc { flex: 1; }
+    .log-desc b { font-weight: 700; }
+    .log-result { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+    .log-entry.undo .log-desc { color: var(--text-muted); text-decoration: line-through; }
+
+    .card { background: var(--surface); border-radius: 14px; border: 1px solid var(--border); padding: 14px; margin-bottom: 12px; }
+
+    .header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field.span2 { grid-column: span 2; }
+    .field label { font-size: 11px; color: var(--text-muted); font-weight: 700; letter-spacing: 0.02em; }
+    .field input, .field select { padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; background: var(--bg); color: var(--text); }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--buy); }
+
+    .tab-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+    .tab-btn { border: 1px solid var(--border); background: var(--surface); border-radius: 10px; padding: 9px 4px; font-size: 13px; font-weight: 700; color: var(--text-secondary); cursor: pointer; text-align: center; }
+    .tab-btn .count { font-weight: 400; font-size: 11px; opacity: 0.8; }
+    .tab-btn.active[data-cat="pengpai"] { background: var(--c-pengpai); color: white; border-color: var(--c-pengpai); }
+    .tab-btn.active[data-cat="home"] { background: var(--c-home); color: white; border-color: var(--c-home); }
+    .tab-btn.active[data-cat="other"] { background: var(--c-custom); color: white; border-color: var(--c-custom); }
+
+    .section-label { font-size: 12px; font-weight: 700; color: var(--text-muted); margin: 14px 2px 6px; }
+
+    .item-card { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+    .item-card.pengpai { border-left-color: var(--c-pengpai); }
+    .item-card.home { border-left-color: var(--c-home); }
+    .item-card.other { border-left-color: var(--c-custom); }
+    .item-card.zero-stock { border-left-color: var(--danger); background: var(--danger-bg); }
+
+    .item-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .item-name-row { display: flex; align-items: center; gap: 6px; }
+    .item-name { font-weight: 700; font-size: 15px; }
+    .zero-badge { font-size: 10px; background: var(--danger); color: white; padding: 2px 6px; border-radius: 8px; font-weight: 700; }
+
+    .item-right { display: flex; align-items: center; gap: 8px; }
+    .item-price { color: var(--text-secondary); font-weight: 700; font-size: 13px; }
+    .stock-input { width: 52px; text-align: center; padding: 5px 0; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; font-weight: 700; -moz-appearance: textfield; }
+    .stock-input::-webkit-outer-spin-button, .stock-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    .btn-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .btn { padding: 9px 0; border: none; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; color: white; text-align: center; }
+    .btn-sell { background: var(--sell); }
+    .btn-buy { background: var(--buy); }
+    .btn-out { background: var(--out); }
+    .btn-in { background: var(--in); }
+    .btn:active { opacity: 0.8; transform: scale(0.97); }
+
+    .empty-state { text-align: center; padding: 30px 10px; color: var(--text-muted); font-size: 13px; }
+
+    .summary-box .summary-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+    .summary-box .summary-row strong { font-weight: 700; }
+    .summary-box hr { border: 0; border-top: 1px dashed var(--border); margin: 10px 0; }
+    .summary-box .summary-total { font-size: 16px; font-weight: 700; color: var(--text); border-top: 1px solid var(--border); padding-top: 10px; margin-top: 4px; display: flex; justify-content: space-between; }
+
+    .submit-footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); box-shadow: 0 -2px 10px rgba(0,0,0,0.08); z-index: 100; border-top: 1px solid var(--border); }
+    .submit-btn { width: 100%; max-width: 600px; display: block; margin: 0 auto; padding: 14px; background: var(--text); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; }
+    .submit-btn:disabled { background: var(--text-muted); cursor: not-allowed; }
+
+    #toastContainer { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; flex-direction: column; gap: 8px; align-items: center; width: 92%; max-width: 560px; pointer-events: none; }
+    .toast { padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 14px rgba(0,0,0,0.15); opacity: 0; transform: translateY(-8px); transition: opacity 0.2s ease, transform 0.2s ease; max-width: 100%; text-align: center; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger); }
+    .toast.success { background: #e6f4ea; color: var(--in); border: 1px solid var(--in); }
+    .toast.info { background: #e8f0fe; color: var(--buy); border: 1px solid var(--buy); }
+</style>
 </head>
 <body>
 
+<div id="toastContainer"></div>
+
 <div class="container">
-    <h2>🍱 現場便當清點與庫存系統</h2>
-    
-    <!-- 標頭資訊 -->
-    <div class="header-box">
-        <div style="grid-column: span 2;">
-            <label>日期</label>
-            <input type="date" id="dateInput" onchange="saveToStorage()">
-        </div>
-        <div>
-            <label>地點</label>
-            <select id="locationSelect" onchange="saveToStorage()">
-                <option value="農安">農安</option>
-                <option value="馬偕">馬偕</option>
-                <option value="中山">中山</option>
-                <option value="吉林">吉林</option>
-                <option value="松江">松江</option>
-                <option value="晴光">晴光</option>
-                <option value="復北">復北</option>
-                <option value="建國">建國</option>
-                <option value="民生">民生</option>
-            </select>
-        </div>
-        <div>
-            <label>販售人員</label>
-            <input type="text" id="staffInput" placeholder="請輸入姓名" oninput="saveToStorage()">
+    <div class="top-title">
+        <h1>現場便當清點與庫存系統</h1>
+        <p>測試版介面</p>
+    </div>
+
+    <div class="toolbar">
+        <button type="button" class="toolbar-btn" onclick="toggleLogPanel()">操作紀錄 <span class="badge" id="logCountBadge" style="display:none;"></span></button>
+        <button type="button" class="toolbar-btn" id="undoBtn" onclick="undoLastAction()" disabled>復原上一步</button>
+    </div>
+
+    <div class="card log-panel" id="logPanel">
+        <div id="logList"></div>
+    </div>
+
+    <div class="card">
+        <div class="header-grid">
+            <div class="field span2">
+                <label>日期</label>
+                <input type="date" id="dateInput" onchange="saveToStorage()">
+            </div>
+            <div class="field">
+                <label>地點</label>
+                <select id="locationSelect" onchange="saveToStorage()">
+                    <option value="農安">農安</option>
+                    <option value="馬偕">馬偕</option>
+                    <option value="中山">中山</option>
+                    <option value="吉林">吉林</option>
+                    <option value="松江">松江</option>
+                    <option value="晴光">晴光</option>
+                    <option value="復北">復北</option>
+                    <option value="建國">建國</option>
+                    <option value="民生">民生</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>販售人員</label>
+                <input type="text" id="staffInput" placeholder="請輸入姓名" oninput="saveToStorage()">
+            </div>
         </div>
     </div>
 
-    <!-- 便當清單容器 -->
+    <div class="tab-bar">
+        <button type="button" class="tab-btn" data-cat="pengpai" onclick="switchTab(0)">澎派餐盒<br><span class="count" id="tabCount0"></span></button>
+        <button type="button" class="tab-btn" data-cat="home" onclick="switchTab(1)">家常便當<br><span class="count" id="tabCount1"></span></button>
+        <button type="button" class="tab-btn" data-cat="other" onclick="switchTab(2)">其他<br><span class="count" id="tabCount2"></span></button>
+    </div>
+
     <div id="bentoApp"></div>
 
-    <!-- 彙總區域 -->
-    <div class="summary-box">
+    <div class="card summary-box">
         <div class="summary-row">
             <span>澎派餐盒剩餘：<strong id="pengpaiStock">0</strong> 個</span>
             <span>家常便當剩餘：<strong id="homeStock">0</strong> 個</span>
         </div>
+        <div class="summary-row">
+            <span>其他剩餘：<strong id="otherStockDisplay">0</strong> 個</span>
+        </div>
         <div class="summary-row"><span>總剩餘庫存：</span><strong id="totalStockDisplay">0 個</strong></div>
-        <hr style="border: 0; border-top: 1px dashed #ccc; margin: 8px 0;">
-        <div class="summary-row"><span>今日賣出總數：</span><strong id="totalSellDisplay" style="color:#d93025">0 個</strong></div>
-        <div class="summary-row"><span>今日調出總數：</span><strong id="totalOutDisplay" style="color:#f2994a">0 個</strong></div>
-        <div class="summary-row"><span>今日補入總數：</span><strong id="totalInDisplay" style="color:#27ae60">0 個</strong></div>
+        <hr>
+        <div class="summary-row"><span>今日賣出總數：</span><strong id="totalSellDisplay" style="color:var(--sell)">0 個</strong></div>
+        <div class="summary-row"><span>今日調出總數：</span><strong id="totalOutDisplay" style="color:var(--out)">0 個</strong></div>
+        <div class="summary-row"><span>今日補入總數：</span><strong id="totalInDisplay" style="color:var(--in)">0 個</strong></div>
         <div class="summary-total"><span>今日營業額金額：</span><span id="totalRevenueDisplay">$0 元</span></div>
     </div>
+</div>
 
-    <button class="submit-btn" onclick="submitData()">送出清點資料 (同步至中央廚房)</button>
+<div class="submit-footer">
+    <button class="submit-btn" onclick="submitData()">送出清點資料（同步至中央廚房）</button>
 </div>
 
 <script>
@@ -116,49 +193,106 @@
 
     function getTodayString() {
         const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     }
-
-    const todayStr = getTodayString();
-    document.getElementById('dateInput').value = todayStr;
+    document.getElementById('dateInput').value = getTodayString();
 
     let menuData = [
-        {
-            category: "澎派餐盒",
-            items: [
-                { id: 1, name: "雙拼", price: 200, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 2, name: "鱸魚", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 3, name: "滷肉", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 4, name: "滷雞腿", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 5, name: "瓜仔肉", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 6, name: "鯖魚", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 7, name: "蔥雞", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 8, name: "壽喜燒豬", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 9, name: "三杯雞", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 10, name: "虱目魚柳", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 11, name: "素菇菇", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 12, name: "豆皮捲", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 }
-            ]
-        },
-        {
-            category: "家常便當",
-            items: [
-                { id: 13, name: "滷肉", price: 130, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 14, name: "滷雞腿", price: 130, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 15, name: "瓜仔肉", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 16, name: "鯖魚", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 17, name: "蔥雞", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 18, name: "壽喜燒豬", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 19, name: "三杯雞", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 20, name: "虱目魚柳", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 21, name: "素菇菇", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-                { id: 22, name: "豆皮捲", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 }
-            ]
-        }
+        { category: "澎派餐盒", key: "pengpai", items: [
+            { id: 1, name: "雙拼", price: 200, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 2, name: "鱸魚", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 3, name: "滷肉", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 4, name: "滷雞腿", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 5, name: "瓜仔肉", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 6, name: "鯖魚", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 7, name: "蔥雞", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 8, name: "壽喜燒豬", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 9, name: "三杯雞", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 10, name: "虱目魚柳", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 11, name: "素菇菇", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 12, name: "豆皮捲", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 }
+        ]},
+        { category: "家常便當", key: "home", items: [
+            { id: 13, name: "滷肉", price: 130, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 14, name: "滷雞腿", price: 130, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 15, name: "瓜仔肉", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 16, name: "鯖魚", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 17, name: "蔥雞", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 18, name: "壽喜燒豬", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 19, name: "三杯雞", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 20, name: "虱目魚柳", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 21, name: "素菇菇", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
+            { id: 22, name: "豆皮捲", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 }
+        ]},
+        { category: "其他", key: "other", items: [
+            { id: 23, name: "好控麵", price: 170, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 }
+        ]}
     ];
+
+    let activeTab = 0;
+    let actionLog = [];
+    let undoStack = [];
+    let isActionLocked = false;
+
+    function formatTime() {
+        const now = new Date();
+        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    }
+
+    function pushLog(desc, resultText) {
+        actionLog.unshift({ time: formatTime(), desc, resultText, undone: false });
+        if (actionLog.length > 100) actionLog.pop();
+        renderLog();
+    }
+
+    function pushUndo(itemId, prevState) {
+        undoStack.push({ itemId, prevState });
+        if (undoStack.length > 20) undoStack.shift();
+        document.getElementById('undoBtn').disabled = false;
+    }
+
+    function toggleLogPanel() {
+        document.getElementById('logPanel').classList.toggle('show');
+    }
+
+    function renderLog() {
+        const badge = document.getElementById('logCountBadge');
+        if (actionLog.length > 0) {
+            badge.style.display = 'inline';
+            badge.textContent = actionLog.length;
+        } else {
+            badge.style.display = 'none';
+        }
+
+        const listEl = document.getElementById('logList');
+        if (actionLog.length === 0) {
+            listEl.innerHTML = '<div class="log-empty">目前還沒有操作紀錄</div>';
+            return;
+        }
+        listEl.innerHTML = actionLog.map(entry => `
+            <div class="log-entry${entry.undone ? ' undo' : ''}">
+                <span class="log-time">${entry.time}</span>
+                <span class="log-desc">${entry.desc}</span>
+                <span class="log-result">${entry.resultText}</span>
+            </div>
+        `).join('');
+    }
+
+    function undoLastAction() {
+        if (undoStack.length === 0) return;
+        const last = undoStack.pop();
+        const item = findItem(last.itemId);
+        if (item) {
+            Object.assign(item, last.prevState);
+            const inputEl = document.getElementById(`input-${item.id}`);
+            if (inputEl) inputEl.value = item.stock;
+            pushLog(`復原：<b>${item.name}</b>`, `剩 ${item.stock}`);
+            renderApp();
+            saveToStorage();
+            showToast('已復原上一步操作', 'info');
+        }
+        document.getElementById('undoBtn').disabled = undoStack.length === 0;
+    }
 
     function saveToStorage() {
         const stateData = {
@@ -172,77 +306,117 @@
 
     function loadFromStorage() {
         const savedData = localStorage.getItem('bento_app_backup');
-        if (savedData) {
-            try {
-                const parsed = JSON.parse(savedData);
-                const currentInputDate = document.getElementById('dateInput').value;
-
-                if (parsed.savedDate === currentInputDate) {
-                    if (parsed.location) document.getElementById('locationSelect').value = parsed.location;
-                    if (parsed.staff) document.getElementById('staffInput').value = parsed.staff;
-                    if (parsed.menuData) menuData = parsed.menuData;
-                } else {
-                    localStorage.removeItem('bento_app_backup');
+        if (!savedData) return;
+        try {
+            const parsed = JSON.parse(savedData);
+            const currentInputDate = document.getElementById('dateInput').value;
+            if (parsed.savedDate === currentInputDate) {
+                if (parsed.location) document.getElementById('locationSelect').value = parsed.location;
+                if (parsed.staff) document.getElementById('staffInput').value = parsed.staff;
+                if (parsed.menuData && parsed.menuData.length === menuData.length) {
+                    menuData = parsed.menuData;
+                    menuData.forEach((cat, i) => {
+                        if (i === 0) cat.key = 'pengpai';
+                        if (i === 1) cat.key = 'home';
+                        if (i === 2) cat.key = 'other';
+                    });
                 }
-            } catch (e) {
-                console.error("還原資料失敗", e);
+            } else {
+                localStorage.removeItem('bento_app_backup');
             }
+        } catch (e) {
+            console.error("還原資料失敗", e);
         }
     }
 
+    let toastTimer = null;
+    function showToast(msg, type) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type || 'info'}`;
+        toast.textContent = msg;
+        container.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('show'));
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 250);
+        }, 2400);
+    }
+
+    function switchTab(index) {
+        activeTab = index;
+        renderApp();
+    }
+
+    function updateTabBarUI() {
+        document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+            btn.classList.toggle('active', i === activeTab);
+        });
+        document.getElementById('tabCount0').textContent = `${menuData[0].items.length} 項`;
+        document.getElementById('tabCount1').textContent = `${menuData[1].items.length} 項`;
+        document.getElementById('tabCount2').textContent = `${menuData[2].items.length} 項`;
+    }
+
+    function renderItemCard(item, catKey) {
+        const el = document.createElement('div');
+        el.className = `item-card ${catKey}${item.stock === 0 ? ' zero-stock' : ''}`;
+        el.innerHTML = `
+            <div class="item-info">
+                <div class="item-name-row">
+                    <span class="item-name">${item.name}</span>
+                    ${item.stock === 0 ? '<span class="zero-badge">補貨</span>' : ''}
+                </div>
+                <div class="item-right">
+                    <span class="item-price">$${item.price}</span>
+                    <input type="number" id="input-${item.id}" class="stock-input" min="0" value="${item.stock}" onchange="updateManualStock(${item.id}, this.value)">
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-sell" onclick="action(${item.id}, 'sell')">賣出</button>
+                <button class="btn btn-buy" onclick="action(${item.id}, 'buy')">買入</button>
+                <button class="btn btn-out" onclick="action(${item.id}, 'out')">調出</button>
+                <button class="btn btn-in" onclick="action(${item.id}, 'in')">補入</button>
+            </div>
+        `;
+        return el;
+    }
+
     function renderApp() {
+        updateTabBarUI();
         const appContainer = document.getElementById('bentoApp');
         appContainer.innerHTML = '';
 
-        menuData.forEach(cat => {
-            const catTitle = document.createElement('div');
-            catTitle.className = 'category-title';
-            catTitle.innerHTML = `<span>${cat.category}</span>`;
-            appContainer.appendChild(catTitle);
+        const cat = menuData[activeTab];
 
-            cat.items.forEach(item => {
-                const itemEl = document.createElement('div');
-                itemEl.className = 'item-card';
-                itemEl.innerHTML = `
-                    <div class="item-info">
-                        <span class="item-name">${item.name}</span>
-                        <div>
-                            <span class="item-price">$${item.price}</span>
-                            &nbsp; 庫存: 
-                            <input type="number" id="input-${item.id}" class="stock-input" min="0" value="${item.stock}" onchange="updateManualStock(${item.id}, this.value)">
-                        </div>
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn btn-sell" onclick="action(${item.id}, 'sell')">賣出</button>
-                        <button class="btn btn-buy" onclick="action(${item.id}, 'buy')">買入</button>
-                        <button class="btn btn-out" onclick="action(${item.id}, 'out')">調出</button>
-                        <button class="btn btn-in" onclick="action(${item.id}, 'in')">補入</button>
-                    </div>
-                `;
-                appContainer.appendChild(itemEl);
-            });
-        });
+        if (cat.items.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'empty-state';
+            empty.textContent = '這個分類目前沒有品項';
+            appContainer.appendChild(empty);
+        } else {
+            cat.items.forEach(item => appContainer.appendChild(renderItemCard(item, cat.key)));
+        }
 
         calculateTotals();
     }
 
-    // 手動修改庫存時的驗證邏輯
     function updateManualStock(itemId, val) {
         const item = findItem(itemId);
         if (!item) return;
-
         let numVal = parseInt(val, 10);
-
-        // 如果輸入非數字或小於 0，強制修正為 0 並跳出提示
         if (isNaN(numVal) || numVal < 0) {
-            alert('⚠️ 庫存數量不能為負數！已自動調整為 0。');
+            showToast('庫存不能為負數，已自動調整為 0', 'error');
             numVal = 0;
             const inputEl = document.getElementById(`input-${itemId}`);
             if (inputEl) inputEl.value = 0;
         }
+        if (numVal === item.stock) return;
 
+        pushUndo(itemId, { ...item });
+        const before = item.stock;
         item.stock = numVal;
-        calculateTotals();
+        pushLog(`<b>${item.name}</b> 手動修改庫存 ${before} → ${numVal}`, `剩 ${item.stock}`);
+        renderApp();
         saveToStorage();
     }
 
@@ -256,51 +430,71 @@
     }
 
     function action(itemId, type) {
+        if (isActionLocked) return;
         const item = findItem(itemId);
         if (!item) return;
 
+        const actionLabels = { sell: '賣出', buy: '買入', out: '調出', in: '補入' };
+
         if (type === 'sell') {
-            if (item.stock > 0) { item.stock--; item.sold++; }
-            else { alert('庫存為 0，無法賣出！'); return; }
+            if (item.stock > 0) {
+                isActionLocked = true;
+                pushUndo(itemId, { ...item });
+                item.stock--; item.sold++;
+            }
+            else { showToast('庫存為 0，無法賣出', 'error'); return; }
         } else if (type === 'buy') {
-            if (item.sold > 0) { item.stock++; item.sold--; }
-            else { alert('目前沒有已賣出的紀錄可以銷帳！'); return; }
+            if (item.sold > 0) {
+                isActionLocked = true;
+                pushUndo(itemId, { ...item });
+                item.stock++; item.sold--;
+            }
+            else { showToast('目前沒有已賣出的紀錄可以銷帳', 'error'); return; }
         } else if (type === 'out') {
-            if (item.stock > 0) { item.stock--; item.transferredOut++; }
-            else { alert('庫存為 0，無法調出！'); return; }
+            if (item.stock > 0) {
+                isActionLocked = true;
+                pushUndo(itemId, { ...item });
+                item.stock--; item.transferredOut++;
+            }
+            else { showToast('庫存為 0，無法調出', 'error'); return; }
         } else if (type === 'in') {
+            isActionLocked = true;
+            pushUndo(itemId, { ...item });
             item.stock++;
             item.transferredIn++;
         }
 
-        const inputEl = document.getElementById(`input-${item.id}`);
-        if (inputEl) inputEl.value = item.stock;
-
-        calculateTotals();
+        pushLog(`<b>${item.name}</b> ${actionLabels[type]}`, `剩 ${item.stock}`);
+        renderApp();
         saveToStorage();
+        setTimeout(() => { isActionLocked = false; }, 300);
     }
 
     function calculateTotals() {
-        let pengpaiStock = 0, homeStock = 0, totalSold = 0, totalOut = 0, totalIn = 0, totalRevenue = 0;
+        let pengpaiStock = 0, homeStock = 0, otherStock = 0, totalSold = 0, totalOut = 0, totalIn = 0, totalRevenue = 0, totalItems = 0;
 
         menuData.forEach(cat => {
             cat.items.forEach(item => {
-                if (cat.category === "澎派餐盒") pengpaiStock += item.stock;
-                else if (cat.category === "家常便當") homeStock += item.stock;
+                if (cat.key === 'pengpai') pengpaiStock += item.stock;
+                else if (cat.key === 'home') homeStock += item.stock;
+                else if (cat.key === 'other') otherStock += item.stock;
                 totalSold += item.sold;
                 totalOut += item.transferredOut;
                 totalIn += item.transferredIn;
                 totalRevenue += (item.sold * item.price);
+                totalItems += 1;
             });
         });
 
-        document.getElementById('pengpaiStock').innerText = pengpaiStock;
-        document.getElementById('homeStock').innerText = homeStock;
-        document.getElementById('totalStockDisplay').innerText = `${pengpaiStock + homeStock} 個 (${pengpaiStock} 澎派 + ${homeStock} 家常)`;
-        document.getElementById('totalSellDisplay').innerText = `${totalSold} 個`;
-        document.getElementById('totalOutDisplay').innerText = `${totalOut} 個`;
-        document.getElementById('totalInDisplay').innerText = `${totalIn} 個`;
-        document.getElementById('totalRevenueDisplay').innerText = `$${totalRevenue.toLocaleString()} 元`;
+        const totalStock = pengpaiStock + homeStock + otherStock;
+        document.getElementById('pengpaiStock').textContent = pengpaiStock;
+        document.getElementById('homeStock').textContent = homeStock;
+        document.getElementById('otherStockDisplay').textContent = otherStock;
+        document.getElementById('totalStockDisplay').textContent = `${totalStock} 個 (${pengpaiStock} 澎派 + ${homeStock} 家常 + ${otherStock} 其他)`;
+        document.getElementById('totalSellDisplay').textContent = `${totalSold} 個`;
+        document.getElementById('totalOutDisplay').textContent = `${totalOut} 個`;
+        document.getElementById('totalInDisplay').textContent = `${totalIn} 個`;
+        document.getElementById('totalRevenueDisplay').textContent = `$${totalRevenue.toLocaleString()} 元`;
     }
 
     function submitData() {
@@ -308,13 +502,12 @@
         const staffValue = staffInput.value.trim();
 
         if (!staffValue) {
-            alert("請先輸入【販售人員】姓名再送出資料！");
+            showToast('請先輸入【販售人員】姓名再送出', 'error');
             staffInput.focus();
             return;
         }
-
         if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.trim() === "") {
-            alert("請先在代碼中設定正確的 GAS_WEB_APP_URL！");
+            showToast('尚未設定 GAS_WEB_APP_URL', 'error');
             return;
         }
 
@@ -346,27 +539,26 @@
         fetch(GAS_WEB_APP_URL, {
             method: 'POST',
             mode: 'no-cors',
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8',
-            },
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload)
         })
         .then(() => {
-            alert('✅ 成功上傳資料至中央廚房 Google Sheet！');
+            showToast('已成功上傳至中央廚房', 'success');
             submitBtn.disabled = false;
-            submitBtn.innerText = "送出清點資料 (同步至中央廚房)";
+            submitBtn.innerText = "送出清點資料（同步至中央廚房）";
             saveToStorage();
         })
         .catch(err => {
-            alert('❌ 上傳失敗，請檢查網路連線或 Apps Script 網址設定。');
+            showToast('上傳失敗，請檢查網路連線', 'error');
             console.error(err);
             submitBtn.disabled = false;
-            submitBtn.innerText = "送出清點資料 (同步至中央廚房)";
+            submitBtn.innerText = "送出清點資料（同步至中央廚房）";
         });
     }
 
     loadFromStorage();
     renderApp();
+    renderLog();
 </script>
 </body>
 </html>
