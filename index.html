@@ -36,10 +36,11 @@
     .top-title h1 { font-size: 18px; font-weight: 700; margin: 0; color: var(--text); }
     .top-title p { font-size: 12px; color: var(--text-muted); margin: 2px 0 0; }
 
-    .toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .toolbar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
     .toolbar-btn { display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--border); background: var(--surface); border-radius: 10px; padding: 9px 4px; font-size: 13px; font-weight: 700; color: var(--text-secondary); cursor: pointer; }
     .toolbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .toolbar-btn .badge { background: var(--sell); color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; }
+    .toolbar-btn .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--in); display: inline-block; }
 
     .log-panel { display: none; margin-bottom: 12px; }
     .log-panel.show { display: block; }
@@ -83,8 +84,28 @@
 
     .item-right { display: flex; align-items: center; gap: 8px; }
     .item-price { color: var(--text-secondary); font-weight: 700; font-size: 13px; }
+    .opening-note { color: var(--text-muted); font-size: 11px; font-weight: 700; background: var(--bg); padding: 2px 6px; border-radius: 6px; }
     .stock-input { width: 52px; text-align: center; padding: 5px 0; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; font-weight: 700; -moz-appearance: textfield; }
     .stock-input::-webkit-outer-spin-button, .stock-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    .opening-overlay { display: none; position: fixed; inset: 0; background: rgba(35,36,31,0.5); z-index: 500; }
+    .opening-overlay.show { display: flex; align-items: flex-end; justify-content: center; }
+    .opening-panel { background: var(--surface); width: 100%; max-width: 600px; max-height: 85vh; border-radius: 16px 16px 0 0; display: flex; flex-direction: column; }
+    .opening-panel-header { padding: 14px 16px 10px; border-bottom: 1px solid var(--border); }
+    .opening-panel-header h3 { margin: 0 0 3px; font-size: 16px; }
+    .opening-panel-header p { margin: 0; font-size: 12px; color: var(--text-muted); }
+    .opening-panel-list { overflow-y: auto; padding: 8px 16px; flex: 1; }
+    .opening-cat-label { font-size: 11px; font-weight: 700; color: var(--text-muted); margin: 12px 0 6px; }
+    .opening-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); }
+    .opening-row-name { font-size: 14px; font-weight: 700; }
+    .opening-row-price { font-size: 11px; color: var(--text-muted); margin-left: 6px; font-weight: 400; }
+    .opening-row input { width: 60px; text-align: center; padding: 6px 0; border: 1px solid var(--border); border-radius: 6px; font-size: 15px; font-weight: 700; }
+    .opening-panel-footer { padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .opening-total { font-size: 14px; font-weight: 700; }
+    .opening-total span { color: var(--c-pengpai); }
+    .opening-panel-footer-btns { display: flex; gap: 8px; }
+    .opening-cancel-btn { padding: 10px 16px; border: 1px solid var(--border); background: var(--surface); border-radius: 8px; font-size: 13px; font-weight: 700; color: var(--text-secondary); cursor: pointer; }
+    .opening-confirm-btn { padding: 10px 16px; border: none; background: var(--c-pengpai); color: white; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
 
     .btn-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
     .btn { padding: 9px 0; border: none; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; color: white; text-align: center; }
@@ -126,6 +147,7 @@
     <div class="toolbar">
         <button type="button" class="toolbar-btn" onclick="toggleLogPanel()">操作紀錄 <span class="badge" id="logCountBadge" style="display:none;"></span></button>
         <button type="button" class="toolbar-btn" id="undoBtn" onclick="undoLastAction()" disabled>復原上一步</button>
+        <button type="button" class="toolbar-btn" onclick="openOpeningPanel()">起始庫存 <span class="dot" id="openingDot" style="display:none;"></span></button>
     </div>
 
     <div class="card log-panel" id="logPanel">
@@ -148,7 +170,7 @@
                     <option value="松江">松江</option>
                     <option value="晴光">晴光</option>
                     <option value="復北">復北</option>
-                    <option value="建國">建國</option>
+                    <option value="錦州">錦州</option>
                     <option value="民生">民生</option>
                 </select>
             </div>
@@ -184,6 +206,23 @@
     </div>
 </div>
 
+<div class="opening-overlay" id="openingOverlay">
+    <div class="opening-panel">
+        <div class="opening-panel-header">
+            <h3>確認起始庫存</h3>
+            <p>請輸入現場清點到的實際數量，確認後會作為今天結算對照的基準</p>
+        </div>
+        <div class="opening-panel-list" id="openingPanelList"></div>
+        <div class="opening-panel-footer">
+            <div class="opening-total">起始總數：<span id="openingTotalValue">0</span> 個</div>
+            <div class="opening-panel-footer-btns">
+                <button type="button" class="opening-cancel-btn" onclick="closeOpeningPanel()">取消</button>
+                <button type="button" class="opening-confirm-btn" onclick="confirmOpeningStock()">確認送出</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="submit-footer">
     <button class="submit-btn" onclick="submitData()">送出清點資料（同步至中央廚房）</button>
 </div>
@@ -199,33 +238,35 @@
 
     let menuData = [
         { category: "澎派餐盒", key: "pengpai", items: [
-            { id: 1, name: "雙拼", price: 200, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 2, name: "鱸魚", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 3, name: "滷肉", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 4, name: "滷雞腿", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 5, name: "瓜仔肉", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 6, name: "鯖魚", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 7, name: "蔥雞", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 8, name: "壽喜燒豬", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 9, name: "三杯雞", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 10, name: "虱目魚柳", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 11, name: "素菇菇", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 12, name: "豆皮捲", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 }
+            { id: 1, name: "雙拼", price: 200, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 2, name: "鱸魚", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 3, name: "滷肉", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 4, name: "滷雞腿", price: 160, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 5, name: "瓜仔肉", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 6, name: "鯖魚", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 7, name: "蔥雞", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 8, name: "壽喜燒豬", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 9, name: "三杯雞", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 10, name: "虱目魚柳", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 11, name: "素菇菇", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 12, name: "豆皮捲", price: 150, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 }
         ]},
         { category: "家常便當", key: "home", items: [
-            { id: 13, name: "滷肉", price: 130, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 14, name: "滷雞腿", price: 130, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 15, name: "瓜仔肉", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 16, name: "鯖魚", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 17, name: "蔥雞", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 18, name: "壽喜燒豬", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 19, name: "三杯雞", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 20, name: "虱目魚柳", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 21, name: "素菇菇", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 },
-            { id: 22, name: "豆皮捲", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 }
+            { id: 13, name: "滷肉", price: 130, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 14, name: "滷雞腿", price: 130, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 15, name: "瓜仔肉", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 16, name: "鯖魚", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 17, name: "蔥雞", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 18, name: "壽喜燒豬", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 19, name: "三杯雞", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 20, name: "虱目魚柳", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 21, name: "素菇菇", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 22, name: "豆皮捲", price: 120, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 }
         ]},
         { category: "其他", key: "other", items: [
-            { id: 23, name: "好控麵", price: 170, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0 }
+            { id: 23, name: "好控麵", price: 170, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 24, name: "特殊A", price: 130, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 },
+            { id: 25, name: "特殊B", price: 180, stock: 0, sold: 0, transferredOut: 0, transferredIn: 0, openingStock: 0 }
         ]}
     ];
 
@@ -233,6 +274,10 @@
     let actionLog = [];
     let undoStack = [];
     let isActionLocked = false;
+    let openingConfirmed = false;
+    let openingConfirmedAt = null;
+    let hasActionSinceOpening = false;
+    let openingReminderShown = false;
 
     function formatTime() {
         const now = new Date();
@@ -294,12 +339,103 @@
         document.getElementById('undoBtn').disabled = undoStack.length === 0;
     }
 
+    function updateOpeningDot() {
+        const dot = document.getElementById('openingDot');
+        dot.style.display = openingConfirmed ? 'inline-block' : 'none';
+    }
+
+    function openOpeningPanel() {
+        const listEl = document.getElementById('openingPanelList');
+        listEl.innerHTML = '';
+
+        menuData.forEach(cat => {
+            const label = document.createElement('div');
+            label.className = 'opening-cat-label';
+            label.textContent = cat.category;
+            listEl.appendChild(label);
+
+            cat.items.forEach(item => {
+                const prefill = openingConfirmed ? item.openingStock : item.stock;
+                const row = document.createElement('div');
+                row.className = 'opening-row';
+                row.innerHTML = `
+                    <span class="opening-row-name">${item.name}<span class="opening-row-price">$${item.price}</span></span>
+                    <input type="number" min="0" id="opening-input-${item.id}" value="${prefill}" oninput="updateOpeningTotal()">
+                `;
+                listEl.appendChild(row);
+            });
+        });
+
+        updateOpeningTotal();
+        document.getElementById('openingOverlay').classList.add('show');
+    }
+
+    function closeOpeningPanel() {
+        document.getElementById('openingOverlay').classList.remove('show');
+    }
+
+    function updateOpeningTotal() {
+        let total = 0;
+        menuData.forEach(cat => {
+            cat.items.forEach(item => {
+                const inputEl = document.getElementById(`opening-input-${item.id}`);
+                if (inputEl) total += parseInt(inputEl.value, 10) || 0;
+            });
+        });
+        document.getElementById('openingTotalValue').textContent = total;
+    }
+
+    function confirmOpeningStock() {
+        const isFirstConfirm = !openingConfirmed || !hasActionSinceOpening;
+        let total = 0;
+        const changes = [];
+
+        menuData.forEach(cat => {
+            cat.items.forEach(item => {
+                const inputEl = document.getElementById(`opening-input-${item.id}`);
+                let val = parseInt(inputEl ? inputEl.value : item.openingStock, 10);
+                if (isNaN(val) || val < 0) val = 0;
+                total += val;
+
+                if (openingConfirmed && hasActionSinceOpening && val !== item.openingStock) {
+                    changes.push(`${item.name} ${item.openingStock} → ${val}`);
+                }
+
+                item.openingStock = val;
+                if (isFirstConfirm) {
+                    item.stock = val;
+                    const stockInputEl = document.getElementById(`input-${item.id}`);
+                    if (stockInputEl) stockInputEl.value = val;
+                }
+            });
+        });
+
+        const wasReconfirm = openingConfirmed && hasActionSinceOpening;
+        openingConfirmed = true;
+        openingConfirmedAt = formatTime();
+        hasActionSinceOpening = false;
+
+        if (wasReconfirm && changes.length > 0) {
+            pushLog(`重新確認起始庫存：${changes.join('、')}`, `共 ${total}`);
+        } else {
+            pushLog('已確認起始庫存', `共 ${total} 個`);
+        }
+
+        closeOpeningPanel();
+        renderApp();
+        saveToStorage();
+        showToast(`起始庫存已確認（共 ${total} 個）`, 'success');
+    }
+
     function saveToStorage() {
         const stateData = {
             savedDate: document.getElementById('dateInput').value,
             location: document.getElementById('locationSelect').value,
             staff: document.getElementById('staffInput').value,
-            menuData: menuData
+            menuData: menuData,
+            openingConfirmed: openingConfirmed,
+            openingConfirmedAt: openingConfirmedAt,
+            hasActionSinceOpening: hasActionSinceOpening
         };
         localStorage.setItem('bento_app_backup', JSON.stringify(stateData));
     }
@@ -319,8 +455,14 @@
                         if (i === 0) cat.key = 'pengpai';
                         if (i === 1) cat.key = 'home';
                         if (i === 2) cat.key = 'other';
+                        cat.items.forEach(item => {
+                            if (typeof item.openingStock !== 'number') item.openingStock = 0;
+                        });
                     });
                 }
+                openingConfirmed = !!parsed.openingConfirmed;
+                openingConfirmedAt = parsed.openingConfirmedAt || null;
+                hasActionSinceOpening = !!parsed.hasActionSinceOpening;
             } else {
                 localStorage.removeItem('bento_app_backup');
             }
@@ -365,6 +507,7 @@
                 <div class="item-name-row">
                     <span class="item-name">${item.name}</span>
                     ${item.stock === 0 ? '<span class="zero-badge">補貨</span>' : ''}
+                    ${openingConfirmed ? `<span class="opening-note">起始 ${item.openingStock}</span>` : ''}
                 </div>
                 <div class="item-right">
                     <span class="item-price">$${item.price}</span>
@@ -383,6 +526,7 @@
 
     function renderApp() {
         updateTabBarUI();
+        updateOpeningDot();
         const appContainer = document.getElementById('bentoApp');
         appContainer.innerHTML = '';
 
@@ -434,6 +578,11 @@
         const item = findItem(itemId);
         if (!item) return;
 
+        if (!openingConfirmed && !openingReminderShown) {
+            showToast('尚未確認起始庫存，記得清點後點「起始庫存」確認', 'info');
+            openingReminderShown = true;
+        }
+
         const actionLabels = { sell: '賣出', buy: '買入', out: '調出', in: '補入' };
 
         if (type === 'sell') {
@@ -465,6 +614,7 @@
         }
 
         pushLog(`<b>${item.name}</b> ${actionLabels[type]}`, `剩 ${item.stock}`);
+        hasActionSinceOpening = true;
         renderApp();
         saveToStorage();
         setTimeout(() => { isActionLocked = false; }, 300);
@@ -519,6 +669,8 @@
             date: document.getElementById('dateInput').value,
             location: document.getElementById('locationSelect').value,
             staff: staffValue,
+            openingConfirmed: openingConfirmed,
+            openingConfirmedAt: openingConfirmedAt || '',
             items: []
         };
 
@@ -528,6 +680,7 @@
                     category: cat.category,
                     name: item.name,
                     price: item.price,
+                    openingStock: item.openingStock,
                     stock: item.stock,
                     sold: item.sold,
                     transferredOut: item.transferredOut,
